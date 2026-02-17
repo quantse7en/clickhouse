@@ -1,5 +1,8 @@
 # Prerequisites
 *.d
+#Keys
+*.pem
+*.ppk
 
 # Compiled Object files
 *.slo
