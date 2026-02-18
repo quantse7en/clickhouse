@@ -14,7 +14,7 @@ CREATE TABLE mkt.equity_1min
     close Float64,
     volume UInt64
 )
-ENGINE = MergeTree()
+ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (symbol, timestamp);
 
@@ -33,7 +33,7 @@ CREATE TABLE mkt.futures_1min
     volume UInt64,
     oi UInt64
 )
-ENGINE = MergeTree()
+ENGINE = ReplacingMergeTree()
 PARTITION BY (toYYYYMM(timestamp), expiry)
 ORDER BY (symbol, expiry, timestamp);
 
@@ -41,19 +41,20 @@ ORDER BY (symbol, expiry, timestamp);
 --Save Options data from df from KITE API python functions
 CREATE TABLE mkt.options_1min
 (
-    symbol String,
+    exchange LowCardinality(String),
+	symbol String,
     instrument_token UInt32,
     expiry Date,
-    strike Float64,
+    strike Decimal(10,2),
     optType LowCardinality(String), -- CE / PE
     timestamp DateTime,
-    open Float64,
+	open Float64,
     high Float64,
     low Float64,
     close Float64,
     volume UInt64,
     oi UInt64
 )
-ENGINE = MergeTree()
-PARTITION BY (toYYYYMM(timestamp), expiry)
-ORDER BY (symbol, expiry, strike, optType, timestamp);
+ENGINE = ReplacingMergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (exchange, symbol, expiry, strike, optType, timestamp);
