@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from clickhouse_driver import Client
 import sys
+import time
 
 #Load all utility and inputs required for the below code
 load_dotenv()
@@ -112,7 +113,13 @@ equityCols = ['symbol','instrument_token','exchange','timestamp', 'open', 'high'
 for ticker in symbols['Symbol']:
     
     logger.info(f"Fetching data for instrument {ticker}, start date: {startDate}, end date: {endDate}")
-    df, instrumentId = fetch_ohlcv_data(ticker,'NSE','minute',startDate,endDate)
+    try:
+        df, instrumentId = fetch_ohlcv_data(ticker,'NSE','minute',startDate,endDate)
+    except:
+        print(f"Rate limit hit for {ticker}, retrying...")
+        time.sleep(60)
+        df, instrumentId = fetch_ohlcv_data(ticker,'NSE','minute',startDate,endDate)
+
     logger.info(f"Data count for instrument {ticker}, count: {len(df)}")
     
     df['symbol'] = ticker
