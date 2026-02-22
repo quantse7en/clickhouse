@@ -16,6 +16,7 @@ from tqdm import tqdm
 from clickhouse_driver import Client
 import sys
 import time
+from kiteconnect.exceptions import NetworkException
 
 #Load all utility and inputs required for the below code
 load_dotenv()
@@ -80,6 +81,25 @@ def get_kite_for_user():
         return None
 
 
+def safe_fetch(ticker, startDate, endDate, max_retries=5):
+    delay = 5
+    
+    for attempt in range(max_retries):
+        try:
+            return fetch_ohlcv_data(
+                ticker, 'NSE', 'minute', startDate, endDate
+            )
+        except NetworkException as e:
+            if "Too many requests" in str(e):
+                logger.info(f"Rate limit hit for {ticker}. Sleeping {delay}s...")
+                time.sleep(delay)
+                delay *= 2  # exponential backoff
+            else:
+                raise e
+
+    raise Exception(f"Max retries exceeded for {ticker}")
+
+
 def fetch_ohlcv_data(symbol, exchange, interval, from_date, to_date):
     kite = get_kite_for_user()
     batch_days = kite_interval_day_limit[interval]
@@ -113,13 +133,9 @@ equityCols = ['symbol','instrument_token','exchange','timestamp', 'open', 'high'
 for ticker in symbols['Symbol']:
     
     logger.info(f"Fetching data for instrument {ticker}, start date: {startDate}, end date: {endDate}")
-    try:
-        df, instrumentId = fetch_ohlcv_data(ticker,'NSE','minute',startDate,endDate)
-    except:
-        print(f"Rate limit hit for {ticker}, retrying...")
-        time.sleep(60)
-        df, instrumentId = fetch_ohlcv_data(ticker,'NSE','minute',startDate,endDate)
-
+    
+    df, instrumentId = safe_fetch(ticker, startDate, endDate)
+    
     logger.info(f"Data count for instrument {ticker}, count: {len(df)}")
     
     df['symbol'] = ticker
@@ -153,3 +169,5 @@ for ticker in symbols['Symbol']:
     db_count = client.execute(f"select count() from mkt.equity_1min FINAL where symbol='{ticker}' and toDate(timestamp)>=toDate('{startDate}') and toDate(timestamp) <= toDate('{endDate}')")[0][0]
     if len(df) != db_count:
         logger.error(f"Error data length mismatch for {ticker}, python: {len(df)}, clickhouse: {db_count}")
+        
+    time.sleep(1)
