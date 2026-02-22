@@ -1,5 +1,9 @@
 # Prerequisites
 *.d
+
+#environment files
+.env
+
 #Keys
 *.pem
 *.ppk
