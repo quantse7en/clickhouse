@@ -82,7 +82,7 @@ def get_kite_for_user():
 
 
 def safe_fetch(ticker, startDate, endDate, max_retries=5):
-    delay = 5
+    delay = 10
     
     for attempt in range(max_retries):
         try:
@@ -110,7 +110,13 @@ def fetch_ohlcv_data(symbol, exchange, interval, from_date, to_date):
 
     df = pd.DataFrame()
     
-    instrumentId = eqInstruments[(eqInstruments['exchange'] == exchange) & (eqInstruments['tradingsymbol'] == symbol)]['instrument_token'].values[0]
+    instrumentId = eqInstruments[(eqInstruments['exchange'] == exchange) & (eqInstruments['tradingsymbol'] == symbol)]['instrument_token']
+    
+    if len(instrumentId) == 0:
+        instrumentId = eqInstruments[(eqInstruments['exchange'] == exchange) & (eqInstruments['tradingsymbol'].str.contains(symbol + '-'))]['instrument_token'].values[0]
+    else:
+        instrumentId = instrumentId.values[0]
+        
     if not instrumentId:
         raise Exception("Instrument token not found")
     
