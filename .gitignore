@@ -3,6 +3,7 @@
 
 #environment files
 .env
+*.env
 
 #Keys
 *.pem
@@ -46,3 +47,11 @@
 
 # debug information files
 *.dwo
+
+#Directories
+input/
+logs/
+
+#cache files
+*pycache__*
+.gitignore
